@@ -1,4 +1,3 @@
-
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -46,48 +45,55 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* Backdrop for mobile focus */}
+      <div 
+        className={c('sidebar-backdrop', { open: isSidebarOpen })} 
+        onClick={toggleSidebar}
+      />
+      
       <aside className={c('sidebar', { open: isSidebarOpen })}>
         <div className="sidebar-header">
           <h3>Settings</h3>
           <button onClick={toggleSidebar} className="close-button">
-            <span className="icon">close</span>
+            <span className="material-symbols-outlined">close</span>
           </button>
         </div>
         <div className="sidebar-content">
           
-          {/* Correction Section (Pending) */}
+          {/* Agent Corrections */}
           <div className="sidebar-section">
              <button 
                className="accordion-header" 
                onClick={() => setIsCorrectionsOpen(!isCorrectionsOpen)}
+               style={{width: '100%', display:'flex', alignItems:'center', justifyContent:'space-between', background:'none', border:'none', color:'white', padding:'8px 0', cursor:'pointer'}}
              >
-               <span className="icon">{isCorrectionsOpen ? 'expand_more' : 'chevron_right'}</span>
-               <h4 className="sidebar-section-title" style={{marginBottom:0}}>
-                 Attention: Agent Correction
-                 {suggestions.length > 0 && <span className="badge">{suggestions.length}</span>}
-               </h4>
-               {isAnalyzing && <span className="analyzing-spinner icon">sync</span>}
+               <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                 <span className="material-symbols-outlined">{isCorrectionsOpen ? 'expand_more' : 'chevron_right'}</span>
+                 <h4 style={{margin:0}}>Supervisor Alerts</h4>
+                 {isAnalyzing && <span className="material-symbols-outlined analyzing-spinner" style={{fontSize:16, color:'#34c759'}}>sync</span>}
+               </div>
+               {suggestions.length > 0 && <span className="badge" style={{background:'#ff453a', padding:'2px 8px', borderRadius:'12px', fontSize:'12px'}}>{suggestions.length}</span>}
              </button>
              
              {isCorrectionsOpen && (
                <div className="corrections-list">
                  {suggestions.length === 0 ? (
-                   <div className="empty-state">No corrections detected yet.</div>
+                   <div className="empty-state" style={{opacity:0.5, fontSize:14, padding:'8px'}}>All good. No issues detected.</div>
                  ) : (
                    suggestions.map(s => (
                      <div key={s.id} className="correction-card">
                        <div className="correction-header">
-                         <span className="icon warning-icon">warning</span>
+                         <span className="material-symbols-outlined warning-icon">warning</span>
                          <span className="timestamp">{s.timestamp.toLocaleTimeString()}</span>
                        </div>
-                       <p className="correction-summary"><strong>User said:</strong> "{s.originalFeedback}"</p>
+                       <p className="correction-summary"><strong>Said:</strong> "{s.originalFeedback}"</p>
                        <p className="correction-summary"><strong>Fix:</strong> {s.summary}</p>
                        <div className="correction-actions">
                          <button onClick={() => applyCorrection(s.id, s.newSystemPrompt)} className="apply-btn">
                            Apply Fix
                          </button>
                          <button onClick={() => removeSuggestion(s.id)} className="dismiss-btn">
-                           Dismiss
+                           Ignore
                          </button>
                        </div>
                      </div>
@@ -97,60 +103,52 @@ export default function Sidebar() {
              )}
           </div>
 
-          {/* Correction History Section */}
           <div className="sidebar-section">
              <button 
                className="accordion-header" 
                onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+               style={{width: '100%', display:'flex', alignItems:'center', justifyContent:'space-between', background:'none', border:'none', color:'white', padding:'8px 0', cursor:'pointer'}}
              >
-               <span className="icon">{isHistoryOpen ? 'expand_more' : 'chevron_right'}</span>
-               <h4 className="sidebar-section-title" style={{marginBottom:0}}>
-                 Corrections Log
-                 {appliedCorrections.length > 0 && <span className="badge gray">{appliedCorrections.length}</span>}
-               </h4>
+               <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                 <span className="material-symbols-outlined">{isHistoryOpen ? 'expand_more' : 'chevron_right'}</span>
+                 <h4 style={{margin:0}}>History</h4>
+               </div>
+               {appliedCorrections.length > 0 && <span className="badge" style={{background:'#333', padding:'2px 8px', borderRadius:'12px', fontSize:'12px'}}>{appliedCorrections.length}</span>}
              </button>
              
              {isHistoryOpen && (
                <div className="corrections-list">
-                 {appliedCorrections.length === 0 ? (
-                   <div className="empty-state">No corrections applied yet.</div>
-                 ) : (
-                   appliedCorrections.map(s => (
-                     <div key={s.id} className="correction-card history-card">
-                       <div className="correction-header">
-                         <span className="icon check-icon">check_circle</span>
-                         <span className="timestamp">{s.appliedAt.toLocaleTimeString()}</span>
-                       </div>
-                       <p className="correction-summary"><strong>Issue:</strong> {s.summary}</p>
-                       <p className="correction-summary"><strong>User said:</strong> "{s.originalFeedback}"</p>
+                 {appliedCorrections.map(s => (
+                   <div key={s.id} className="correction-card history-card">
+                     <div className="correction-header">
+                       <span className="material-symbols-outlined check-icon">check_circle</span>
+                       <span className="timestamp">{s.appliedAt.toLocaleTimeString()}</span>
                      </div>
-                   ))
-                 )}
+                     <p className="correction-summary"><strong>Applied:</strong> {s.summary}</p>
+                   </div>
+                 ))}
                </div>
              )}
           </div>
           
-          <hr className="divider" />
+          <hr style={{borderColor:'rgba(255,255,255,0.1)', margin:'20px 0'}} />
 
           <div className="sidebar-section">
-            <fieldset disabled={connected}>
+            <fieldset disabled={connected} style={{border:'none', padding:0, margin:0}}>
               <label>
-                System Prompt
+                System Persona
                 <textarea
                   value={systemPrompt}
                   onChange={e => setSystemPrompt(e.target.value)}
-                  rows={10}
-                  placeholder="Describe the role and personality of the AI..."
+                  rows={8}
+                  style={{resize:'vertical'}}
                 />
               </label>
               <label>
                 Model
                 <select value={model} onChange={e => setModel(e.target.value)}>
-                  {/* This is an experimental model name that should not be removed from the options. */}
                   {AVAILABLE_MODELS.map(m => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
+                    <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
               </label>
@@ -158,71 +156,52 @@ export default function Sidebar() {
                 Voice
                 <select value={voice} onChange={e => setVoice(e.target.value)}>
                   {AVAILABLE_VOICES.map(v => (
-                    <option key={v} value={v}>
-                      {v}
-                    </option>
+                    <option key={v} value={v}>{v}</option>
                   ))}
                 </select>
               </label>
             </fieldset>
             <label>
-              Style
+              Expressive Style
               <select value={style} onChange={e => setStyle(e.target.value)}>
                 {AVAILABLE_STYLES.map(s => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
+                  <option key={s} value={s}>{s}</option>
                 ))}
               </select>
             </label>
-            <div className="tool-item" style={{ marginTop: '8px' }}>
-              <label className="tool-checkbox-wrapper">
+            <div className="tool-item">
+              <label className="tool-checkbox-wrapper" style={{display:'flex', alignItems:'center', gap:'12px', width:'100%', cursor:'pointer'}}>
                 <input
                   type="checkbox"
                   checked={googleSearch}
                   onChange={() => setGoogleSearch(!googleSearch)}
                   disabled={connected}
+                  style={{width:'20px', height:'20px'}}
                 />
-                <span className="checkbox-visual"></span>
+                <span className="tool-name-text">Enable Google Search</span>
               </label>
-              <span className="tool-name-text">Use Google Search</span>
             </div>
           </div>
           <div className="sidebar-section">
-            <h4 className="sidebar-section-title">Tools</h4>
+            <h4 style={{marginBottom:'16px'}}>Active Tools</h4>
             <div className="tools-list">
               {tools.map(tool => (
                 <div key={tool.name} className="tool-item">
-                  <label className="tool-checkbox-wrapper">
+                  <label className="tool-checkbox-wrapper" style={{display:'flex', alignItems:'center', flex:1}}>
                     <input
                       type="checkbox"
-                      id={`tool-checkbox-${tool.name}`}
                       checked={tool.isEnabled}
                       onChange={() => toggleTool(tool.name)}
                       disabled={connected}
                     />
-                    <span className="checkbox-visual"></span>
-                  </label>
-                  <label
-                    htmlFor={`tool-checkbox-${tool.name}`}
-                    className="tool-name-text"
-                  >
-                    {tool.name}
+                    <span className="tool-name-text">{tool.name}</span>
                   </label>
                   <div className="tool-actions">
-                    <button
-                      onClick={() => setEditingTool(tool)}
-                      disabled={connected}
-                      aria-label={`Edit ${tool.name}`}
-                    >
-                      <span className="icon">edit</span>
+                    <button onClick={() => setEditingTool(tool)} disabled={connected}>
+                      <span className="material-symbols-outlined">edit</span>
                     </button>
-                    <button
-                      onClick={() => removeTool(tool.name)}
-                      disabled={connected}
-                      aria-label={`Delete ${tool.name}`}
-                    >
-                      <span className="icon">delete</span>
+                    <button onClick={() => removeTool(tool.name)} disabled={connected}>
+                      <span className="material-symbols-outlined">delete</span>
                     </button>
                   </div>
                 </div>
@@ -233,7 +212,8 @@ export default function Sidebar() {
               className="add-tool-button"
               disabled={connected}
             >
-              <span className="icon">add</span> Add function call
+              <span className="material-symbols-outlined" style={{verticalAlign:'middle', marginRight:'8px'}}>add_circle</span> 
+              Add Function
             </button>
           </div>
         </div>
@@ -245,116 +225,6 @@ export default function Sidebar() {
           onSave={handleSaveTool}
         />
       )}
-      <style>{`
-        .accordion-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: none;
-          border: none;
-          color: var(--gray-200);
-          cursor: pointer;
-          width: 100%;
-          text-align: left;
-          padding: 4px 0;
-        }
-        .accordion-header:hover {
-          color: white;
-        }
-        .badge {
-          background: var(--Red-500);
-          color: white;
-          font-size: 10px;
-          padding: 2px 6px;
-          border-radius: 99px;
-          font-weight: bold;
-          margin-left: auto;
-        }
-        .badge.gray {
-          background: var(--Neutral-50);
-        }
-        .analyzing-spinner {
-          animation: spin 1s linear infinite;
-          margin-left: 8px;
-          font-size: 16px;
-          color: var(--Blue-400);
-        }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        
-        .corrections-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-top: 12px;
-          margin-bottom: 12px;
-        }
-        .empty-state {
-          font-size: 13px;
-          color: var(--gray-500);
-          font-style: italic;
-          padding: 8px;
-        }
-        .correction-card {
-          background: var(--Neutral-15);
-          border: 1px solid var(--Red-700);
-          border-radius: 8px;
-          padding: 12px;
-        }
-        .history-card {
-          border-color: var(--Green-700);
-        }
-        .correction-header {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 8px;
-        }
-        .warning-icon {
-          color: var(--Red-500);
-          font-size: 18px;
-        }
-        .check-icon {
-          color: var(--Green-500);
-          font-size: 18px;
-        }
-        .timestamp {
-          font-size: 11px;
-          color: var(--gray-500);
-        }
-        .correction-summary {
-          font-size: 13px;
-          margin-bottom: 6px;
-          line-height: 1.4;
-          color: var(--gray-200);
-        }
-        .correction-actions {
-          display: flex;
-          gap: 8px;
-          margin-top: 12px;
-        }
-        .apply-btn {
-          background: var(--Green-700);
-          color: white;
-          padding: 6px 12px;
-          border-radius: 4px;
-          font-size: 12px;
-          flex: 1;
-          justify-content: center;
-        }
-        .apply-btn:hover { background: var(--Green-500); }
-        .dismiss-btn {
-          background: var(--Neutral-30);
-          color: var(--gray-200);
-          padding: 6px 12px;
-          border-radius: 4px;
-          font-size: 12px;
-        }
-        .dismiss-btn:hover { background: var(--Neutral-50); }
-        .divider {
-          border: 0;
-          border-top: 1px solid var(--gray-800);
-          margin: 0;
-        }
-      `}</style>
     </>
   );
 }

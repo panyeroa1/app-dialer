@@ -17,7 +17,7 @@ const renderContent = (text: string) => {
   const parts = text.split(/(`{3}json\n[\s\S]*?\n`{3})/g);
   return parts.map((part, index) => {
     if (part.startsWith('```json')) {
-      return null; // Hide raw JSON in chat view for cleanliness
+      return null;
     }
     const boldParts = part.split(/(\*\*.*?\*\*)/g);
     return boldParts.map((boldPart, boldIndex) => {
@@ -55,12 +55,12 @@ export default function StreamingConsole() {
       
       if (timeSinceActivity > 12000 && silenceStageRef.current === 0) {
         silenceStageRef.current = 1;
-        client.send([{ text: `[SYSTEM: Silence (12s). Re-engage naturally.]` }]);
-        useLogStore.getState().addTurn({ role: 'system', text: `Silence (12s) - Re-engaging`, isFinal: true });
+        client.send([{ text: `[SYSTEM: User silent (12s). Recall a significant topic you discussed. Use a transition like "Before I forget..." or "I was thinking about..."]` }]);
+        useLogStore.getState().addTurn({ role: 'system', text: `Silence (12s) - Contextual Recall Triggered`, isFinal: true });
       }
       if (timeSinceActivity > 45000 && silenceStageRef.current === 1) {
         silenceStageRef.current = 2;
-        client.send([{ text: `[SYSTEM: Silence (45s). Check connection.]` }]);
+        client.send([{ text: `[SYSTEM: Silence (45s). Check connection/Audio.]` }]);
         useLogStore.getState().addTurn({ role: 'system', text: 'Persistent silence (45s) - Connection check', isFinal: true });
       }
     }, 1000);
@@ -105,14 +105,19 @@ export default function StreamingConsole() {
 
       if (isFinal && text.trim().length > 2) {
         setAnalyzing(true);
+        // Use aggregated text from the last user turn if possible
+        const aggregatedText = (turns.length > 0 && turns[turns.length-1].role === 'user') 
+          ? turns[turns.length-1].text 
+          : text;
+
         const currentPrompt = useSettings.getState().systemPrompt;
-        checkCorrection(API_KEY, currentPrompt, text, turns).then(result => {
+        checkCorrection(API_KEY, currentPrompt, aggregatedText, turns).then(result => {
            if (result.detected && result.newSystemPrompt) {
              addSuggestion({
-               id: crypto.randomUUID(), timestamp: new Date(), originalFeedback: text,
+               id: crypto.randomUUID(), timestamp: new Date(), originalFeedback: aggregatedText,
                summary: result.summary || 'Correction', newSystemPrompt: result.newSystemPrompt
              });
-             addTurn({ role: 'system', text: `⚡ Correction detected: "${result.summary}"`, isFinal: true });
+             addTurn({ role: 'system', text: `⚡ Supervisor: ${result.summary}`, isFinal: true });
            }
         }).finally(() => setAnalyzing(false));
       }
@@ -167,7 +172,7 @@ export default function StreamingConsole() {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }
-  }, [turns]);
+  }, [turns, connected]);
 
   return (
     <div className="transcription-container">
@@ -183,7 +188,7 @@ export default function StreamingConsole() {
                 <div className="grounding-chunks">
                   {t.groundingChunks.filter(chunk => chunk.web?.uri).map((chunk, idx) => (
                     <a key={idx} href={chunk.web?.uri} target="_blank" rel="noreferrer">
-                      Source {idx + 1}
+                      {chunk.web?.title || `Source ${idx + 1}`}
                     </a>
                   ))}
                 </div>
